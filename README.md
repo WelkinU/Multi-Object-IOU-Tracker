@@ -21,7 +21,8 @@ Disadvantages:
 ``` Python
 mot = MultiObjectTracker() #initialize MultiObjectTracker object
 
-#Example of how to add some bounding boxes at each time step, you'd probably do this with a For loop in actual code
+# Example of how to add bounding boxes at each time step
+# (You'd probably do this with a For loop in actual code)
 
 #Timestep #1: add some boxes
 boxes = [Box([0,0,2,2]), Box([10,10,12,12])]
@@ -38,7 +39,8 @@ mot.step(boxes)
 # Finish tracking - call this function when you're done adding bounding boxes
 mot.finish_tracking()
 
-# Export state as Pandas DataFrame (cols: Time, TrackID, X1, Y1, X2, Y2 + whatever special args were passed into Box objects above)
+# Export state as Pandas DataFrame
+# cols: Time, TrackID, X1, Y1, X2, Y2 + whatever special args were passed into Box objects above
 df = mot.export_pandas_dataframe()
 
 df.to_csv('output.csv', index = False) #export to CSV
