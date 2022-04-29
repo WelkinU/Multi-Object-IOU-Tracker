@@ -15,9 +15,9 @@ from scipy.optimize import linear_sum_assignment
 
 class MultiObjectTracker:
 
-    def __init__(self, track_persistance: int = 2, 
+    def __init__(self, track_persistance: int = 1, 
+                minimum_track_length: int = 1,
                 iou_lower_threshold: float = 0.04,
-                minimum_track_length: int = 2,
                 interpolate_tracks: bool = False):
 
         assert track_persistance >= 0
@@ -34,7 +34,7 @@ class MultiObjectTracker:
 
         self.time_step = 0
 
-    def step(self,list_of_new_boxes = []):
+    def step(self,list_of_new_boxes: list = []):
         ''' Call this method to add more bounding boxes to the tracker'''
 
         self.time_step += 1 #increment time step
@@ -73,10 +73,10 @@ class MultiObjectTracker:
             for box in list_of_new_boxes:
                 self.active_tracks.append(Track(initial_box = box, initial_time_step = self.time_step))
 
-        #active tracks with age > track_persistance are set to be finished tracks
+        #active tracks with age >= track_persistance are set to be finished tracks
         newly_finished_track_ind = []
         for i, trk in enumerate(self.active_tracks):
-            if trk.last_added_time_step + self.track_persistance <= self.time_step:
+            if trk.timestamps[-1] + self.track_persistance <= self.time_step:
                 self.finished_tracks.append(trk)
                 newly_finished_track_ind.append(i)
 
@@ -91,6 +91,7 @@ class MultiObjectTracker:
         self.active_tracks = []
 
         if self.interpolate_tracks:
+            print('[WARNING] -- INTERPOLATION NOT YET ADDED TO THE CODE! SKIPPING FOR NOW!')
             for i in range(len(self.finished_tracks)):
                 self.finished_tracks.interpolate()
 
@@ -98,7 +99,53 @@ class MultiObjectTracker:
         self.finished_tracks = [trk for trk in self.finished_tracks if len(trk) >= self.minimum_track_length]
 
         #sort tracks by track start time
-        self.finished_tracks = sorted(self.finished_tracks, key = lambda x: x.initial_time_step)
+        self.finished_tracks = sorted(self.finished_tracks, key = lambda x: x.timestamps[0])
+
+    def export_pandas_dataframe(self, additional_cols = 'auto'):
+        '''Converts multi-object tracker internal state to Pandas dataframe with cols:
+        Time, TrackID, X1, Y1, X2, Y2
+
+        Arguments:
+        additional_cols {list or str} -- List of additional attributes to grab from the Box class. 
+                                For each attribute, a column will be added to dataframe and
+                                the function will attempt to grab that value from each Box object
+                                added to the dataframe. If the attribute is not present in a
+                                Box object, it will add NaN or None.
+
+                                If this variable is set to the string "auto", it will populate this
+                                variable with all extra params in all Box added to the tracker. 
+
+        Returns:
+        Pandas DataFrame with specified rows'''
+
+        if isinstance(additional_cols,str) and additional_cols in ['Auto','auto']:
+            additional_cols = set()
+
+            for trk in self.finished_tracks:
+                for box in trk.boxes:
+                    additional_cols = additional_cols.union(set(box.box_properties))
+
+            additional_cols = list(additional_cols)
+
+        df_list = []
+
+        for time in range(self.time_step + 1):
+            for track_id, trk in enumerate(self.finished_tracks):
+                if time in trk.timestamps:
+                    box = trk.boxes[trk.timestamps.index(time)]
+                    row = {'Time': time,
+                            'TrackID': track_id,
+                            'X1': box.box[0],
+                            'Y1': box.box[1],
+                            'X2': box.box[2],
+                            'Y2': box.box[3],
+                            }
+                    for col in additional_cols:
+                        row[col] = box.box_properties[col] if col in box.box_properties else None
+
+                    df_list.append(row)
+
+        return pd.DataFrame(df_list)
 
     def print_internal_state(self):
         ''' For debugging purposes'''
@@ -119,9 +166,7 @@ class Track:
 
     def __init__(self, initial_box, initial_time_step):
         self.boxes = [initial_box]
-        self.initial_time_step = initial_time_step
-
-        self.last_added_time_step = initial_time_step
+        self.timestamps = [initial_time_step]
 
     def get_next_predicted_box(self):
         #maybe add a kalman filter here or something
@@ -130,20 +175,19 @@ class Track:
 
     def add_box(self, box, time_step):
         self.boxes.append(box)
-        self.last_added_time_step = time_step
+        self.timestamps.append(time_step)
 
     def interpolate(self):
+        ''' TODO: Implement this function'''
         pass
 
     def __len__(self):
-        return self.last_added_time_step - self.initial_time_step + 1
+        return self.timestamps[-1] - self.timestamps[0] + 1
 
 class Box:
 
     def __init__(self, box = np.array([0,0,0,0]), **kwargs):
-        '''
-
-        Arguments:
+        '''Arguments:
         box {1x4 numpy array} -- X1, Y1, X2, Y2
         '''
         if isinstance(box, list):
@@ -159,7 +203,7 @@ def IOU(bboxes1, bboxes2):
     #vectorized IOU numpy code from:
     #https://medium.com/@venuktan/vectorized-intersection-over-union-iou-in-numpy-and-tensor-flow-4fa16231b63d
 
-    #input Nx4 numpy arrays
+    #input N x 4 numpy arrays
     x11, y11, x12, y12 = np.split(bboxes1, 4, axis=1)
     x21, y21, x22, y22 = np.split(bboxes2, 4, axis=1)
     xA = np.maximum(x11, np.transpose(x21))
@@ -178,10 +222,10 @@ def IOU(bboxes1, bboxes2):
 
 if __name__ == '__main__':
     
-    mot = MultiObjectTracker(track_persistance = 2, minimum_track_length = 2)
+    mot = MultiObjectTracker(track_persistance = 2, minimum_track_length = 2, iou_lower_threshold = 0.04)
 
     #add some initial boxes
-    boxes = [Box([0,0,2,2]), Box([10,10,12,12])]
+    boxes = [Box([0,0,2,2], confidence = 0.9, object_class = 'car'), Box([10,10,12,12])]
     mot.step(boxes)
     mot.print_internal_state()
 
@@ -204,3 +248,7 @@ if __name__ == '__main__':
     #finish tracking and 
     mot.finish_tracking()
     mot.print_internal_state()
+
+    df = mot.export_pandas_dataframe(additional_cols = 'auto')
+    print(df)
+    #df.to_csv('test.csv', index=False)
