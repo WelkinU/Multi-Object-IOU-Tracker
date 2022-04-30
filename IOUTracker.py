@@ -18,7 +18,8 @@ class MultiObjectTracker:
     def __init__(self, track_persistance: int = 1, 
                 minimum_track_length: int = 1,
                 iou_lower_threshold: float = 0.04,
-                interpolate_tracks: bool = False):
+                interpolate_tracks: bool = False,
+                cross_class_tracking: bool = False):
 
         assert track_persistance >= 0
         assert 0 <= iou_lower_threshold <= 1
@@ -28,6 +29,7 @@ class MultiObjectTracker:
         self.iou_lower_threshold = iou_lower_threshold
         self.minimum_track_length = minimum_track_length
         self.interpolate_tracks = interpolate_tracks
+        self.cross_class_tracking = cross_class_tracking
 
         self.active_tracks = []
         self.finished_tracks = []
@@ -36,11 +38,7 @@ class MultiObjectTracker:
 
     def step(self,list_of_new_boxes: list = []):
         ''' Call this method to add more bounding boxes to the tracker'''
-        '''
-        for i in range(len(list_of_new_boxes)):
-            if isinstance(list_of_new_boxes[i]['box'], list):
-                list_of_new_boxes[i]['box'] = np.array(list_of_new_boxes[i]['box'])
-        '''
+
         self.time_step += 1 #increment time step
 
         #build hungarian matrix of bbox IOU's
@@ -56,6 +54,16 @@ class MultiObjectTracker:
 
             #zero out IOU's less than IOU min threshold to prevent assigment
             hungarian_matrix[hungarian_matrix < self.iou_lower_threshold] = 0
+
+            #zero out IOU's where the object_class variables don't match
+            if not self.cross_class_tracking:
+                for i,new_box in enumerate(list_of_new_boxes):
+                    if "object_class" in new_box:
+                        for j,active_track in enumerate(self.active_tracks):
+                            active_box = active_track.boxes[0] #shouldn't matter which box in the track
+                            if "object_class" in active_box and \
+                                are_coco_classes_different(new_box['object_class'], active_box['object_class']):
+                                hungarian_matrix[i,j] = 0
 
             #compute optimal box matches with Hungarian algorithm
             row_ind, col_ind = linear_sum_assignment(hungarian_matrix, maximize = True)
@@ -208,6 +216,15 @@ def IOU(bboxes1, bboxes2):
     iou = interArea / (boxAArea + np.transpose(boxBArea) - interArea)
     return iou
 
+def are_coco_classes_different(c1, c2):
+    ''' Sets which classes are "equivalent" for the tracker. Most classes are not equal
+    but objects like pickup trucks can be detected as both car and truck. Or sometimes
+    busses can be detected as both truck and bus. This function is a quick and dirty
+    way to stop the track from breaking.
+    '''
+    return c1 != c2 and (set([c1,c2]) not in [{'car','truck'}, {'bus','truck'}])
+
+
 ##############################################
 ###-------------Testing Zone---------------###
 ##############################################
@@ -230,9 +247,28 @@ if __name__ == '__main__':
     mot.print_internal_state()
 
     #add same first 2 boxes, then change the new box, overlapping with first
-    boxes = [{"box":np.array([0,0,1,1])},
-            {"box":np.array([0,0,2,2])},
+    boxes = [{"box":np.array([0,0,1,1]), "object_class": "car" },
+            {"box":np.array([0,0,2,2]), "object_class": "notacar"},
             {"box":np.array([10,10,12,12])}]
+    mot.step(boxes)
+    mot.print_internal_state()
+
+    boxes = [{"box":np.array([0,0,1,1]), "object_class": "car" }]
+    mot.step(boxes)
+    mot.print_internal_state()
+    boxes = [{"box":np.array([0,0,1,1]), "object_class": "truck" }]
+    mot.step(boxes)
+    mot.print_internal_state()
+    boxes = [{"box":np.array([0,0,1,1]), "object_class": "truck" },
+             {"box":np.array([0,0,2,2]), "object_class": "car"}]
+    mot.step(boxes)
+    mot.print_internal_state()
+    boxes = [{"box":np.array([0,0,1,1]), "object_class": "truck" },
+             {"box":np.array([0,0,2,2]), "object_class": "yolo"}]
+    mot.step(boxes)
+    mot.print_internal_state()
+    boxes = [{"box":np.array([0,0,1,1]), "object_class": "truck" },
+             {"box":np.array([0,0,2,2]), "object_class": "yolo"}]
     mot.step(boxes)
     mot.print_internal_state()
 
