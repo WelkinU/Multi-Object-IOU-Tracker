@@ -25,15 +25,16 @@ mot = MultiObjectTracker() #initialize MultiObjectTracker object
 # Example of how to add bounding boxes at each time step
 # You'd probably do this with a For loop in actual code
 
-#Timestep #1: add some boxes, boxes are dictionaries with the key "box" set to a numpy array containing X1,Y1,X2,Y2
+#Timestep #1: add some boxes, boxes are dictionaries with the key "box" set to a
+#numpy array containing X1,Y1,X2,Y2
 boxes = [{"box": np.array([0,0,2,2]) }, 
-        {"box": np.array([10,10,12,12]) }]
+        {"box": np.array([10,10,12,12]) } ]
 mot.step(boxes)
 
 #Timestep #2: add the same boxes, plus a new box
-boxes = [{"box": np.array([0,0,2,2])}, 
-        {"box":np.array([10,10,12,12])},
-        {"box":np.array([20,20,22,22])} ]
+boxes = [{"box": np.array([0,0,2,2]) }, 
+        {"box":np.array([10,10,12,12]) },
+        {"box":np.array([20,20,22,22]) } ]
 mot.step(boxes)
 
 #Timestep #3: You can attach any args to a box
@@ -57,7 +58,8 @@ df.to_csv('output.csv', index = False) #export to CSV
 | track_persistance | 1 | If a Track hasn't had a bounding box added in more than `track_persistance` time steps, then the track is ended. |
 | minimum_track_length | 1 | After tracking is complete, tracks with length less than `minimum_track_length` are deleted |
 | iou_lower_threshold | 0.04 | A bounding box needs a minumum IOU of `iou_lower_threshold` to be added to an existing track |
-| interpolate_tracks | False | After tracking is complete, tracks with "missing boxes" are interpolated (linear interpolation) |
+| interpolate_tracks | False | After tracking is complete, tracks with "missing boxes" are interpolated (linear interpolation) **Not Yet Implemented** |
+| box_prediction_method | None | Method used to predict the next box location for the track. [`None`, `Linear`, `Kalman Filter`] **Not Yet Implemented** |
 
 Example usage: `mot = MultiObjectTracker(track_persistance = 2, minimum_track_length = 4)`
 
