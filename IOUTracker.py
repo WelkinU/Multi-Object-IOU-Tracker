@@ -36,16 +36,22 @@ class MultiObjectTracker:
 
     def step(self,list_of_new_boxes: list = []):
         ''' Call this method to add more bounding boxes to the tracker'''
-
+        '''
+        for i in range(len(list_of_new_boxes)):
+            if isinstance(list_of_new_boxes[i]['box'], list):
+                list_of_new_boxes[i]['box'] = np.array(list_of_new_boxes[i]['box'])
+        '''
         self.time_step += 1 #increment time step
 
         #build hungarian matrix of bbox IOU's
         hungarian_matrix = np.zeros((len(self.active_tracks), len(list_of_new_boxes)))
 
         if len(self.active_tracks) > 0 and len(list_of_new_boxes) > 0:
-            active_boxes = np.concatenate([track.get_next_predicted_box().box[np.newaxis,:]
+            active_boxes = np.concatenate([track.get_next_predicted_box()[np.newaxis,:]
                             for track in self.active_tracks], axis = 0)
-            new_boxes = np.concatenate([b.box[np.newaxis,:] for b in list_of_new_boxes], axis = 0)
+
+            new_boxes = np.concatenate([ b['box'][np.newaxis,:] for b in list_of_new_boxes], 
+                                        axis = 0)
             hungarian_matrix = IOU(new_boxes,active_boxes)
 
             #zero out IOU's less than IOU min threshold to prevent assigment
@@ -123,8 +129,9 @@ class MultiObjectTracker:
 
             for trk in self.finished_tracks:
                 for box in trk.boxes:
-                    additional_cols = additional_cols.union(set(box.box_properties))
+                    additional_cols = additional_cols.union(set(box.keys()))
 
+            additional_cols.discard("box")
             additional_cols = list(additional_cols)
 
         df_list = []
@@ -135,13 +142,13 @@ class MultiObjectTracker:
                     box = trk.boxes[trk.timestamps.index(time)]
                     row = {'Time': time,
                             'TrackID': track_id,
-                            'X1': box.box[0],
-                            'Y1': box.box[1],
-                            'X2': box.box[2],
-                            'Y2': box.box[3],
+                            'X1': box['box'][0],
+                            'Y1': box['box'][1],
+                            'X2': box['box'][2],
+                            'Y2': box['box'][3],
                             }
                     for col in additional_cols:
-                        row[col] = box.box_properties[col] if col in box.box_properties else None
+                        row[col] = box[col] if col in box.keys() else None
 
                     df_list.append(row)
 
@@ -154,11 +161,11 @@ class MultiObjectTracker:
         print(f'Time Step: {self.time_step}')
         print('---------------Active Tracks---------------')
         for i,trk in enumerate(self.active_tracks):
-            print(f'Track {i}: {[list(b.box) for b in trk.boxes]}')
+            print(f'Track {i}: { [list(b["box"]) for b in trk.boxes] }')
 
         print('--------------Finished Tracks--------------')
         for i,trk in enumerate(self.finished_tracks):
-            print(f'Track {i}: {[list(b.box) for b in trk.boxes]}')
+            print(f'Track {i}: {[list(b["box"]) for b in trk.boxes]}')
         print('###########################################')
 
 
@@ -171,7 +178,7 @@ class Track:
     def get_next_predicted_box(self):
         #maybe add a kalman filter here or something
 
-        return self.boxes[-1]
+        return self.boxes[-1]['box']
 
     def add_box(self, box, time_step):
         self.boxes.append(box)
@@ -183,21 +190,6 @@ class Track:
 
     def __len__(self):
         return self.timestamps[-1] - self.timestamps[0] + 1
-
-class Box:
-
-    def __init__(self, box = np.array([0,0,0,0]), **kwargs):
-        '''Arguments:
-        box {1x4 numpy array} -- X1, Y1, X2, Y2
-        '''
-        if isinstance(box, list):
-            box = np.array(box)
-
-        self.box = box 
-        self.box_properties = kwargs
-
-    def __str__(self):
-        return f'''Box: {str(self.box)}, Properties: {self.box_properties}'''
 
 def IOU(bboxes1, bboxes2):
     #vectorized IOU numpy code from:
@@ -225,17 +217,22 @@ if __name__ == '__main__':
     mot = MultiObjectTracker(track_persistance = 2, minimum_track_length = 2, iou_lower_threshold = 0.04)
 
     #add some initial boxes
-    boxes = [Box([0,0,2,2], confidence = 0.9, object_class = 'car'), Box([10,10,12,12])]
+    boxes = [{"box": np.array([0,0,2,2]), "confidence": 0.9, "object_class": "car"}, 
+            {"box": np.array([10,10,12,12]), "confidence": 0.8, "object_class": "truck"}]
     mot.step(boxes)
     mot.print_internal_state()
 
     #add same boxes, plus a new box
-    boxes = [Box([0,0,2,2]), Box([10,10,12,12]), Box([20,20,22,22])]
+    boxes = [{"box": np.array([0,0,2,2]), "confidence": 0.7, "object_class": "car"}, 
+            {"box":np.array([10,10,12,12])},
+            {"box":np.array([20,20,22,22])}]
     mot.step(boxes)
     mot.print_internal_state()
 
     #add same first 2 boxes, then change the new box, overlapping with first
-    boxes = [Box([0,0,1,1]), Box([0,0,2,2]), Box([10,10,12,12])]
+    boxes = [{"box":np.array([0,0,1,1])},
+            {"box":np.array([0,0,2,2])},
+            {"box":np.array([10,10,12,12])}]
     mot.step(boxes)
     mot.print_internal_state()
 

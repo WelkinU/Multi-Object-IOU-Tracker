@@ -19,28 +19,32 @@ Disadvantages:
 ## Example Usage
 
 ``` Python
+from IOUTracker import MultiObjectTracker
 mot = MultiObjectTracker() #initialize MultiObjectTracker object
 
 # Example of how to add bounding boxes at each time step
-# (You'd probably do this with a For loop in actual code)
+# You'd probably do this with a For loop in actual code
 
-#Timestep #1: add some boxes
-boxes = [Box([0,0,2,2]), Box([10,10,12,12])]
+#Timestep #1: add some boxes, boxes are dictionaries with the key "box" set to a numpy array containing X1,Y1,X2,Y2
+boxes = [{"box": np.array([0,0,2,2]) }, 
+        {"box": np.array([10,10,12,12]) }]
 mot.step(boxes)
 
-#Timestep #2: add same boxes, plus a new box
-boxes = [Box([0,0,2,2]), Box([10,10,12,12]), Box([20,20,22,22])]
+#Timestep #2: add the same boxes, plus a new box
+boxes = [{"box": np.array([0,0,2,2])}, 
+        {"box":np.array([10,10,12,12])},
+        {"box":np.array([20,20,22,22])} ]
 mot.step(boxes)
 
-#Timestep #3: You can attach special args to a Box
-boxes = [ Box([0,0,2,2], confidence = 0.89, object_class = 'car') ]
+#Timestep #3: You can attach any args to a box
+boxes = [ {"box": np.array([0,0,2,2]), "confidence": 0.9, "object_class": "car"} ]
 mot.step(boxes)
 
 # Finish tracking - call this function when you're done adding bounding boxes
 mot.finish_tracking()
 
 # Export state as Pandas DataFrame
-# cols: Time, TrackID, X1, Y1, X2, Y2 + whatever special args were passed into Box objects above
+# cols: Time, TrackID, X1, Y1, X2, Y2 + whatever additional args that were in the dicts above
 df = mot.export_pandas_dataframe()
 
 df.to_csv('output.csv', index = False) #export to CSV
