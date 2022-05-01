@@ -199,7 +199,7 @@ class Track:
     def __len__(self):
         return self.timestamps[-1] - self.timestamps[0] + 1
 
-def IOU(bboxes1, bboxes2):
+def IOU(bboxes1, bboxes2, isPixelCoord = 1):
     #vectorized IOU numpy code from:
     #https://medium.com/@venuktan/vectorized-intersection-over-union-iou-in-numpy-and-tensor-flow-4fa16231b63d
 
@@ -210,9 +210,9 @@ def IOU(bboxes1, bboxes2):
     yA = np.maximum(y11, np.transpose(y21))
     xB = np.minimum(x12, np.transpose(x22))
     yB = np.minimum(y12, np.transpose(y22))
-    interArea = np.maximum((xB - xA + 1), 0) * np.maximum((yB - yA + 1), 0)
-    boxAArea = (x12 - x11 + 1) * (y12 - y11 + 1)
-    boxBArea = (x22 - x21 + 1) * (y22 - y21 + 1)
+    interArea = np.maximum((xB - xA + isPixelCoord), 0) * np.maximum((yB - yA + isPixelCoord), 0)
+    boxAArea = (x12 - x11 + isPixelCoord) * (y12 - y11 + isPixelCoord)
+    boxBArea = (x22 - x21 + isPixelCoord) * (y22 - y21 + isPixelCoord)
     iou = interArea / (boxAArea + np.transpose(boxBArea) - interArea)
     return iou
 
