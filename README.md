@@ -86,10 +86,11 @@ Example usage: `mot = MultiObjectTracker(track_persistance = 2, minimum_track_le
 - [x] Basic Test Cases (working on adding more)
 - [x] Build Pandas Dataframe / CSV export
 - [x] Add usage and algorithm documentation to `README.md`
+- [x] Interoperability script with [YOLOv5](https://github.com/ultralytics/yolov5)
+
 
 ## Currently In Work
 
-- [ ] Interoperability script with [YOLOv5](https://github.com/ultralytics/yolov5)
 - [ ] Video demo in conjunction with [YOLOv5](https://github.com/ultralytics/yolov5)
 - [ ] Prevent objects of different classes from being added to same track
 
