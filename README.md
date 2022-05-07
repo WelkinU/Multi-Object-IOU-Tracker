@@ -87,7 +87,7 @@ Example usage: `mot = MultiObjectTracker(track_persistance = 2, minimum_track_le
 - [x] Build Pandas Dataframe / CSV export
 - [x] Add usage and algorithm documentation to `README.md`
 - [x] Interoperability script with [YOLOv5](https://github.com/ultralytics/yolov5)
-
+- [x] Video demo in conjunction with [YOLOv5](https://github.com/ultralytics/yolov5)
 
 ## Currently In Work
 
