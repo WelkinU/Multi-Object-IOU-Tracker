@@ -19,7 +19,7 @@ class MultiObjectTracker:
                 minimum_track_length: int = 1,
                 iou_lower_threshold: float = 0.04,
                 interpolate_tracks: bool = False,
-                cross_class_tracking: bool = False):
+                cross_class_tracking: bool = True):
 
         assert track_persistance >= 0
         assert 0 <= iou_lower_threshold <= 1
@@ -52,6 +52,8 @@ class MultiObjectTracker:
                                         axis = 0)
             hungarian_matrix = IOU(new_boxes,active_boxes)
 
+            #print(hungarian_matrix)
+
             #zero out IOU's less than IOU min threshold to prevent assigment
             hungarian_matrix[hungarian_matrix < self.iou_lower_threshold] = 0
 
@@ -64,6 +66,8 @@ class MultiObjectTracker:
                             if "object_class" in active_box and \
                                 are_coco_classes_different(new_box['object_class'], active_box['object_class']):
                                 hungarian_matrix[i,j] = 0
+
+            #print(hungarian_matrix)
 
             #compute optimal box matches with Hungarian algorithm
             row_ind, col_ind = linear_sum_assignment(hungarian_matrix, maximize = True)
@@ -90,7 +94,7 @@ class MultiObjectTracker:
         #active tracks with age >= track_persistance are set to be finished tracks
         newly_finished_track_ind = []
         for i, trk in enumerate(self.active_tracks):
-            if trk.timestamps[-1] + self.track_persistance <= self.time_step:
+            if trk.timestamps[-1] + self.track_persistance < self.time_step:
                 self.finished_tracks.append(trk)
                 newly_finished_track_ind.append(i)
 
@@ -105,9 +109,8 @@ class MultiObjectTracker:
         self.active_tracks = []
 
         if self.interpolate_tracks:
-            print('[WARNING] -- INTERPOLATION NOT YET ADDED TO THE CODE! SKIPPING FOR NOW!')
             for i in range(len(self.finished_tracks)):
-                self.finished_tracks.interpolate()
+                self.finished_tracks[i].interpolate()
 
         #prune tracks with length less than minimum_track_length
         self.finished_tracks = [trk for trk in self.finished_tracks if len(trk) >= self.minimum_track_length]
@@ -194,7 +197,27 @@ class Track:
 
     def interpolate(self):
         ''' TODO: Implement this function'''
-        pass
+        interpolated_boxes = []
+
+        for i in range(len(self.boxes) - 1):
+            interpolated_boxes.append(self.boxes[i])
+
+            delta = self.timestamps[i+1] - self.timestamps[i]
+            if delta == 1:
+                continue #no need to interpolate sequential boxes
+
+            #not interpolating confidence or other numerical parameters
+            new_boxes = [{"box": ((delta - j) * self.boxes[i]['box'] + j * self.boxes[i+1]['box'])/delta}
+                            for j in range(1, delta)]
+
+            interpolated_boxes.extend(new_boxes)
+
+        interpolated_boxes.append(self.boxes[-1])
+        self.boxes = interpolated_boxes
+        self.timestamps = list(range(self.timestamps[0], self.timestamps[-1] + 1))
+
+        assert len(self.boxes) == len(self.timestamps), f'length of boxes ({len(self.boxes)} != length timestamps ({len(self.timestamps)})'
+
 
     def __len__(self):
         return self.timestamps[-1] - self.timestamps[0] + 1
@@ -222,7 +245,7 @@ def are_coco_classes_different(c1, c2):
     busses can be detected as both truck and bus. This function is a quick and dirty
     way to stop the track from breaking.
     '''
-    return c1 != c2 and (set([c1,c2]) not in [{'car','truck'}, {'bus','truck'}])
+    return c1 != c2 and ( {c1,c2} not in [{'car','truck'}, {'bus','truck'}])
 
 
 ##############################################
@@ -231,7 +254,7 @@ def are_coco_classes_different(c1, c2):
 
 if __name__ == '__main__':
     
-    mot = MultiObjectTracker(track_persistance = 2, minimum_track_length = 2, iou_lower_threshold = 0.04)
+    mot = MultiObjectTracker(track_persistance = 3, minimum_track_length = 2, iou_lower_threshold = 0.04, interpolate_tracks = True)
 
     #add some initial boxes
     boxes = [{"box": np.array([0,0,2,2]), "confidence": 0.9, "object_class": "car"}, 
@@ -256,15 +279,16 @@ if __name__ == '__main__':
     boxes = [{"box":np.array([0,0,1,1]), "object_class": "car" }]
     mot.step(boxes)
     mot.print_internal_state()
-    boxes = [{"box":np.array([0,0,1,1]), "object_class": "truck" }]
+    boxes = []
+    mot.step(boxes)
     mot.step(boxes)
     mot.print_internal_state()
-    boxes = [{"box":np.array([0,0,1,1]), "object_class": "truck" },
+    boxes = [{"box":np.array([0,0,0.5,0.5]), "object_class": "truck" },
              {"box":np.array([0,0,2,2]), "object_class": "car"}]
     mot.step(boxes)
     mot.print_internal_state()
-    boxes = [{"box":np.array([0,0,1,1]), "object_class": "truck" },
-             {"box":np.array([0,0,2,2]), "object_class": "yolo"}]
+    boxes = [{"box":np.array([0,0,1,1]), "object_class": "notacar" },
+             {"box":np.array([0,0,2,2]), "object_class": "car"}]
     mot.step(boxes)
     mot.print_internal_state()
     boxes = [{"box":np.array([0,0,1,1]), "object_class": "truck" },
@@ -278,7 +302,7 @@ if __name__ == '__main__':
     mot.step([])
     mot.print_internal_state()
 
-    #finish tracking and 
+    #finish tracking 
     mot.finish_tracking()
     mot.print_internal_state()
 

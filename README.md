@@ -88,14 +88,13 @@ Example usage: `mot = MultiObjectTracker(track_persistance = 2, minimum_track_le
 - [x] Add usage and algorithm documentation to `README.md`
 - [x] Interoperability script with [YOLOv5](https://github.com/ultralytics/yolov5)
 - [x] Video demo in conjunction with [YOLOv5](https://github.com/ultralytics/yolov5)
+- [x] Build track interpolation feature
 
 ## Currently In Work
 
-- [ ] Video demo in conjunction with [YOLOv5](https://github.com/ultralytics/yolov5)
-- [ ] Prevent objects of different classes from being added to same track
+- [ ] Prevent objects of different classes from being added to same track (with some exceptions).
 
 ## TODO
 
-- [ ] Build track interpolation feature
 - [ ] Kalman filter option added to the `Track` class's `get_next_predicted_box()` function
 
