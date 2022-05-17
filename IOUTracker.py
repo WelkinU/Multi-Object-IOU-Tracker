@@ -34,6 +34,9 @@ class MultiObjectTracker:
         self.active_tracks = []
         self.finished_tracks = []
 
+        self.finished_tracking = False
+        self.displayed_finished_tracking_warning = False
+
         self.time_step = 0
 
     def step(self,list_of_new_boxes: list = []):
@@ -118,6 +121,8 @@ class MultiObjectTracker:
         #sort tracks by track start time
         self.finished_tracks = sorted(self.finished_tracks, key = lambda x: x.timestamps[0])
 
+        self.finished_tracking = True
+
     def export_pandas_dataframe(self, additional_cols = 'auto'):
         '''Converts multi-object tracker internal state to Pandas dataframe with cols:
         Time, TrackID, X1, Y1, X2, Y2
@@ -134,6 +139,10 @@ class MultiObjectTracker:
 
         Returns:
         Pandas DataFrame with specified rows'''
+
+        if not self.finished_tracking and not self.displayed_finished_tracking_warning:
+            print('[WARNING] -- Exporting Pandas DataFrame without calling finish_tracking(). Active tracks will not be exported.')
+            self.displayed_finished_tracking_warning = True
 
         if isinstance(additional_cols,str) and additional_cols in ['Auto','auto']:
             additional_cols = set()
@@ -254,7 +263,7 @@ def are_coco_classes_different(c1, c2):
 
 if __name__ == '__main__':
     
-    mot = MultiObjectTracker(track_persistance = 3, minimum_track_length = 2, iou_lower_threshold = 0.04, interpolate_tracks = True)
+    mot = MultiObjectTracker(track_persistance = 2, minimum_track_length = 2, iou_lower_threshold = 0.04, interpolate_tracks = True)
 
     #add some initial boxes
     boxes = [{"box": np.array([0,0,2,2]), "confidence": 0.9, "object_class": "car"}, 
