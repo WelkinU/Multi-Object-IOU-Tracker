@@ -83,12 +83,12 @@ Example usage: `mot = MultiObjectTracker(track_persistance = 2, minimum_track_le
 ## Features Implemented
 
 - [x] Basic Multi-Object IOU Tracker classes (`MultiObjectTracker`, `Track`, `Box`)
-- [x] Basic Test Cases (working on adding more)
 - [x] Build Pandas Dataframe / CSV export
 - [x] Add usage and algorithm documentation to `README.md`
+- [x] Build track interpolation feature
+- [x] Basic unit test cases with PyTest ([test_IOUTracker.py](test_IOUTracker.py))
 - [x] Interoperability script with [YOLOv5](https://github.com/ultralytics/yolov5)
 - [x] Video demo in conjunction with [YOLOv5](https://github.com/ultralytics/yolov5)
-- [x] Build track interpolation feature
 
 ## Currently In Work
 
@@ -97,4 +97,4 @@ Example usage: `mot = MultiObjectTracker(track_persistance = 2, minimum_track_le
 ## TODO
 
 - [ ] Kalman filter option added to the `Track` class's `get_next_predicted_box()` function
-
+- [ ] More complete unit test coverage
