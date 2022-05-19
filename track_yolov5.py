@@ -10,7 +10,7 @@ from tqdm import tqdm
 from IOUTracker import MultiObjectTracker
 
 def track(yolov5_labels_folder):
-    mot = MultiObjectTracker(track_persistance = 1, minimum_track_length = 1, iou_lower_threshold = 0.04)
+    mot = MultiObjectTracker(track_persistance = 1, minimum_track_length = 7, iou_lower_threshold = 0.2)
 
     #get list of natural sorted label files
     label_file_list = [os.path.join(yolov5_labels_folder, file) 
@@ -103,8 +103,10 @@ def plot_one_box(x, im, color=(128, 128, 128), label=None, line_thickness=3):
 
 if __name__ == '__main__':
     import argparse 
-    default_video_filepath = r"C:\Users\W\Desktop\dev\yolov5\inference\videos\Street Cycling.mp4"
-    default_yolov5_labels_folder = r"C:\Users\W\Desktop\dev\yolov5\runs\detect\exp7\labels"
+    #default_video_filepath = r"C:\Users\W\Desktop\dev\yolov5\inference\videos\Street Cycling.mp4"
+    #default_yolov5_labels_folder = r"C:\Users\W\Desktop\dev\yolov5\runs\detect\exp7\labels"
+    default_video_filepath = r"C:\Users\W\Desktop\dev\yolov5\inference\videos\Dashcam.mp4"
+    default_yolov5_labels_folder = r"C:\Users\W\Desktop\dev\yolov5\runs\detect\exp8\labels"
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--label-folder', type=str, default=default_yolov5_labels_folder, help='Folder containing YOLOv5 output labels')
