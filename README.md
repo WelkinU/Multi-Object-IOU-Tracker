@@ -58,7 +58,7 @@ df.to_csv('output.csv', index = False) #export to CSV
 | track_persistance | 1 | If a Track hasn't had a bounding box added in more than `track_persistance` time steps, then the track is ended. |
 | minimum_track_length | 1 | After tracking is complete, tracks with length less than `minimum_track_length` are deleted |
 | iou_lower_threshold | 0.04 | A bounding box needs a minumum IOU of `iou_lower_threshold` to be added to an existing track |
-| interpolate_tracks | False | After tracking is complete, tracks with "missing boxes" are interpolated (linear interpolation) **Not Yet Implemented** |
+| interpolate_tracks | False | After tracking is complete, tracks with "missing boxes" are interpolated (linear interpolation) |
 | box_prediction_method | None | Method used to predict the next box location for the track. [`None`, `Linear`, `Kalman Filter`] **Not Yet Implemented** |
 
 Example usage: `mot = MultiObjectTracker(track_persistance = 2, minimum_track_length = 4)`
